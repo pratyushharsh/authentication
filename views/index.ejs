@@ -1,0 +1,42 @@
+<% include partials/header %>
+
+
+  <div class="container">
+    <div class="">
+      <% if(errors) { %>
+        <% errors.forEach(function(error){ %>
+          <div class="alert alert-danger">
+            <%= error.msg %>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+    <div style="width: 30%; margin: 0 auto; min-width: 300px;">
+      <h1><%= title %></h1>
+      <form method="POST" action="/register">
+        <div class="form-group">
+          <label for="username">Enter your Username</label>
+          <input type="text" class="form-control" id="username" name="username" placeholder="Username">
+        </div>
+
+        <div class="form-group">
+          <label for="useremail">Email Address</label>
+          <input type="email" class="form-control" id="useremail" name="useremail" placeholder="Enter email">
+          <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="userpassword">Password</label>
+          <input type="password" class="form-control" id="userpassword" name="password" placeholder="Password">
+        </div>
+        <div class="form-group">
+          <label for="userpasswordconfirm">Re-Enter Password</label>
+          <input type="password" class="form-control" id="userpasswordconfirm" name="userpasswordconfirm" placeholder="Confirm Your Password">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+    </div>
+  </div>
+
+
+<% include partials/footer %>
