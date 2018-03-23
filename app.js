@@ -4,11 +4,25 @@ const mongoose = require("mongoose");
 var bodyParser = require("body-parser");
 var Schema = mongoose.Schema;
 const expressValidator = require('express-validator');
+var bcrypt = require('bcrypt');
+const saltRounds = 10;
 
+// Authentication Package
+var session = require("express-session");
+
+// Connect to database
 mongoose.connect("mongodb://localhost/authentication");
 mongoose.Promise = global.Promise;
+
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(expressValidator());
+app.use(session({
+  secret: 'i am feeling horny',
+  resave: false,
+  saveUninitialized: true,
+	name: 'hello'
+  // cookie: { secure: true }
+}))
 
 app.set("view engine", "ejs");
 
@@ -22,7 +36,10 @@ var userSchema = new Schema ({
 // Compile model
 var User = mongoose.model('User', userSchema);
 
-app.get("/", function(req, res, next) {
+app.get("/", function (req, res) {
+	res.render("home", {title: "Home"});
+})
+app.get("/register", function(req, res, next) {
 	res.render("index", {title: 'Registeration', errors: ""});
 });
 
@@ -40,21 +57,26 @@ app.post("/register", function (req, res, next) {
 
 		const error = req.validationErrors();
 
-		var name = req.body.username,
-				email = req.body.useremail,
-				password = req.body.password,
-				newUser = {name: name, email: email, password: password};
-
 		if(error) {
 			console.log(error);
 			res.render("index", {title: 'Registeration Error', errors: error});
 		} else {
-			User.create(newUser, function(err, newlyCreated) {
-				if(err){
-					console.log(err);
-				} else {
-					res.render("index", {title: 'Registeration Complete', errors: ""});
-				}
+			var name = req.body.username,
+					email = req.body.useremail,
+					password = req.body.password;
+
+
+			bcrypt.hash(password, saltRounds, function(err, hash) {
+		  // Store hash in your password DB.
+			var newUser = {name: name, email: email, password: hash};
+
+				User.create(newUser, function(err, newlyCreated) {
+					if(err){
+						console.log(err);
+					} else {
+						res.render("index", {title: 'Registeration Complete', errors: ""});
+					}
+				});
 			});
 		}
 });
