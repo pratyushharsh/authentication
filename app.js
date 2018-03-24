@@ -6,10 +6,17 @@ var Schema = mongoose.Schema;
 const expressValidator = require('express-validator');
 var bcrypt = require('bcrypt');
 const saltRounds = 10;
+var passport = require("passport");
 
 // Authentication Package
 var session = require("express-session");
 
+var MongoStore = require('connect-mongo')(session);
+
+var option = {
+	url: "mongodb://localhost/authentication",
+	autoRemove: 'native'
+}
 // Connect to database
 mongoose.connect("mongodb://localhost/authentication");
 mongoose.Promise = global.Promise;
@@ -17,12 +24,14 @@ mongoose.Promise = global.Promise;
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(expressValidator());
 app.use(session({
-  secret: 'i am feeling horny',
+  secret: 'gfegfdfgiuhbiyjrhdcytyjtjkgbvyurfdfgfv',
   resave: false,
   saveUninitialized: true,
-	name: 'hello'
+	store: new MongoStore(option),
   // cookie: { secure: true }
-}))
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.set("view engine", "ejs");
 
@@ -37,8 +46,25 @@ var userSchema = new Schema ({
 var User = mongoose.model('User', userSchema);
 
 app.get("/", function (req, res) {
+	// console.log(req.session)
+	console.log(req.user);
+	console.log(req.isAuthenticated());
 	res.render("home", {title: "Home"});
 })
+
+app.get("/profile", authenticationMiddleware(), function (req, res) {
+	res.render('profile', {title: 'Profile'});
+});
+
+app.get("/login", function (req, res) {
+	res.render('login', {title: 'Login'});
+});
+
+app.post('/login', passport.authenticate('local', {
+	successRedirect: '/profile',
+	failureRedirect: '/login'
+}));
+
 app.get("/register", function(req, res, next) {
 	res.render("index", {title: 'Registeration', errors: ""});
 });
@@ -74,12 +100,40 @@ app.post("/register", function (req, res, next) {
 					if(err){
 						console.log(err);
 					} else {
-						res.render("index", {title: 'Registeration Complete', errors: ""});
+							var user_id = newlyCreated._id;
+							// console.log(newlyCreated._id)
+							req.login(user_id, function (err) {
+							res.redirect("/");
+						});
+						// res.render("index", {title: 'Registeration Complete', errors: ""});
 					}
+					// console.log(newlyCreated);
 				});
 			});
 		}
 });
+
+passport.serializeUser(function(user_id, done) {
+  done(null, user_id);
+});
+
+passport.deserializeUser(function(user_id, done) {
+  User.findById(user_id, function (err, user) {
+		done(err, user);
+  });
+});
+
+function authenticationMiddleware() {
+	return (req, res, next) => {
+		console.log(`
+			req.session.passport.user: ${JSON.stringify(req.session.passport)}`);
+
+		if(req.isAuthenticated()) return next(
+		);
+
+		res.redirect('/login');
+	}
+}
 
 app.listen(3000, function() {
 	console.log("Server has started")
